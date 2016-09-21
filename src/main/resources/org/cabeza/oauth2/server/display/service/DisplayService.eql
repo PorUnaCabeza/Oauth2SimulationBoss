@@ -1,0 +1,45 @@
+--[queryArticle]
+SELECT  id as id,
+        title as title,
+        content as content,
+        create_time as create_time,
+        update_time as update_time,
+        delete_state as delete_state
+     FROM hermes_article
+     WHERE delete_state!=0
+
+
+--[queryArticleById]
+SELECT  id as id,
+        title as title,
+        content as content,
+        create_time as create_time,
+        update_time as update_time,
+        delete_state as delete_state
+     FROM hermes_article
+     WHERE delete_state!=0
+     AND id=#articleId#
+
+--[saveArticle]
+INSERT INTO hermes_article(
+                        title,
+                        content,
+                        create_time,
+                        delete_state
+                    )
+                    VALUES(
+                        #title#,
+                        #content#,
+                        now(),
+                        '1'
+                    )
+--[updateArticle]
+UPDATE hermes_article
+SET
+    title=#title#,
+    content=#content#,
+    update_time=now()
+WHERE id=#id#
+
+--[deleteArticleById]
+DELETE FROM hermes_article WHERE id=#articleId#

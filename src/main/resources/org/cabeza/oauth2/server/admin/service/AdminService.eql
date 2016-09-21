@@ -1,0 +1,484 @@
+-- [addWayBill]
+INSERT INTO hermes_waybill(
+        item_name,
+        origin_place,
+        destination,
+        weight,
+        expense,
+        state,
+        create_time,
+        sender,
+        receiver
+)
+VALUE (
+        #itemName#,
+        #originPlace#,
+        #destination#,
+        #weight#,
+        #expense#,
+        0,
+        now(),
+        #sender#,
+        #receiver#
+)
+
+--[queryWayBill]
+SELECT
+        wb.id as id,
+        item_name as itemName,
+        origin_place as originPlace,
+        destination,
+        weight,
+        expense,
+        state,
+        DATE_FORMAT(wb.create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+        sender,
+        receiver,
+        DATE_FORMAT(wb.received_time,'%Y-%m-%d %H:%i:%s') as receivedTime,
+        u.id as staff_id,
+        u.staff_name as staff_name
+FROM hermes_waybill wb
+LEFT JOIN shiro_user u
+ON wb.staff_id=u.id
+WHERE wb.state!=-1
+ORDER BY wb.create_time DESC
+
+--[getWayBillById]
+SELECT
+        wb.id as id,
+        item_name as itemName,
+        origin_place as originPlace,
+        destination,
+        weight,
+        expense,
+        state,
+        DATE_FORMAT(wb.create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+        sender,
+        receiver,
+        DATE_FORMAT(wb.received_time,'%Y-%m-%d %H:%i:%s') as receivedTime,
+        u.id as staff_id,
+        u.staff_name as staff_name
+FROM hermes_waybill wb
+LEFT JOIN shiro_user u
+ON wb.staff_id=u.id
+WHERE wb.id=#id#
+
+--[deleteWayBill]
+        DELETE FROM hermes_waybill WHERE id=#1#
+
+--[queryDispatchInfo]
+SELECT
+      id,
+      vehicle_id as vehicleId,
+      driver_id as driverId,
+      origin_place as originPlace,
+      destination,
+      DATE_FORMAT(create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+      DATE_FORMAT(arrive_time,'%Y-%m-%d %H:%i:%s') as arriveTime,
+      state
+FROM hermes_dispatch
+WHERE delete_state=1
+ORDER BY create_time DESC
+    
+--[addDispatchInfo]
+INSERT INTO hermes_dispatch(
+  vehicle_id,
+  driver_id,
+  origin_place,
+  destination,
+  create_time,
+  state
+)
+VALUES (
+  #vehicleId#,
+  #driverId#,
+  #originPlace#,
+  #destination#,
+  now(),
+  0
+)
+    
+--[deleteDispatchInfo]
+        DELETE FROM hermes_dispatch WHERE id=#id#
+
+--[changeDispatchInfoState]
+  UPDATE hermes_dispatch
+    SET state=#state#
+    WHERE id=#dispatchId#
+
+--[setDispatchArrivalTime]
+UPDATE hermes_dispatch
+    SET arrive_time=now()
+    WHERE id=#dispatchId#
+
+--[setWayBillArriveTime]
+UPDATE hermes_waybill
+    SET received_time=now()
+    WHERE id=#wayBillId#
+    
+--[addDriver]
+  INSERT INTO hermes_driver(
+    name,
+    sex,
+    driving_licence_type,
+    driving_licence_number,
+    driving_years,
+    id_number,
+    tel,
+    address,
+    remark,
+    state
+  )
+  VALUES (
+    #name#,
+    #sex#,
+    #driverLicenceType#,
+    #driverLicenceNumber#,
+    #driverYears#,
+    #idNumber#,
+    #tel#,
+    #address#,
+    #remark#,
+    0
+  )
+    
+--[queryDriver]
+SELECT
+    id,
+    name,
+    sex,
+    driving_licence_type as driverLicenceType,
+    driving_licence_number as driverLicenceNumber,
+    driving_years as driverYears,
+    id_number idNumber,
+    tel,
+    address,
+    remark,
+    state
+FROM hermes_driver
+WHERE delete_state=1
+    
+--[deleteDriver]
+UPDATE hermes_driver
+SET delete_state=0
+WHERE id=#id#
+    
+--[updateDriver]
+UPDATE hermes_driver SET
+    name=#name#,
+    sex=#sex#,
+    driving_licence_type=#driverLicenceType#,
+    driving_licence_number=#driverLicenceNumber#,
+    driving_years=#driverYears#,
+    id_number=#idNumber#,
+    tel=#tel#,
+    address=#address#,
+    remark=#remark#
+WHERE id=#id#
+
+--[updateDriverState]
+UPDATE hermes_driver
+    SET state=#state#
+    WHERE id=#driverId#
+    
+
+--[addVehicle]
+INSERT INTO hermes_vehicle(
+  plate_number,
+  vehicle_type,
+  owner_name,
+  owner_tel,
+  owner_id_number,
+  owner_address,
+  remark,
+  state
+)
+VALUES (
+    #plateNumber#,
+    #vehicleType#,
+    #ownerName#,
+    #ownerTel#,
+    #ownerIdNumber#,
+    #ownerAddress#,
+    #remark#,
+    0
+)
+    
+--[queryVehicle]
+SELECT
+    id,
+    plate_number as plateNumber,
+    vehicle_type as vehicleType,
+    owner_name as ownerName,
+    owner_tel as ownerTel,
+    owner_id_number as ownerIdNumber,
+    owner_address as ownerAddress,
+    remark,
+    state
+FROM hermes_vehicle
+WHERE delete_state=1
+    
+--[deleteVehicleInfo]
+UPDATE hermes_vehicle
+ SET delete_state=0
+ WHERE id=#id#
+    
+--[updateVehicleInfo]
+UPDATE hermes_vehicle SET
+  plate_number= #plateNumber#,
+  vehicle_type= #vehicleType#,
+  owner_name= #ownerName#,
+  owner_tel= #ownerTel#,
+  owner_id_number=#ownerIdNumber#,
+  owner_address=#ownerAddress#,
+  remark=#remark#
+WHERE id=#id#
+
+--[updateVehicleState]
+UPDATE hermes_vehicle
+    SET state=#state#
+    WHERE id=#vehicleId#
+
+--[getDispatchById]
+SELECT
+      id,
+      vehicle_id as vehicleId,
+      driver_id as driverId,
+      origin_place as originPlace,
+      destination,
+      DATE_FORMAT(create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+      DATE_FORMAT(arrive_time,'%Y-%m-%d %H:%i:%s') as arriveTime,
+      state
+    FROM hermes_dispatch
+    WHERE id=#id#
+
+--[queryDriverById]
+SELECT
+    id,
+    name,
+    sex,
+    driving_licence_type as driverLicenceType,
+    driving_licence_number as driverLicenceNumber,
+    driving_years as driverYears,
+    id_number idNumber,
+    tel,
+    address,
+    remark
+FROM hermes_driver
+WHERE id=#id#
+
+--[queryVehicleById]
+SELECT
+    id,
+    plate_number as plateNumber,
+    vehicle_type as vehicleType,
+    owner_name as ownerName,
+    owner_tel as ownerTel,
+    owner_id_number as ownerIdNumber,
+    owner_address as ownerAddress,
+    remark
+FROM hermes_vehicle
+WHERE id=#id#
+
+--[getNotOnWayWayBill]
+SELECT
+        id,
+        item_name as itemName,
+        origin_place as originPlace,
+        destination,
+        weight,
+        expense,
+        state,
+        DATE_FORMAT(create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+        sender,
+        receiver,
+        DATE_FORMAT(received_time,'%Y-%m-%d %H:%i:%s') as receivedTime
+FROM hermes_waybill
+WHERE state=0
+
+--[getAlreadyOnWayWayBill]
+SELECT
+        w.id as id,
+        w.item_name as itemName,
+        w.origin_place as originPlace,
+        w.destination as destination,
+        w.weight as weight,
+        w.expense as expense,
+        w.state as state,
+        DATE_FORMAT(w.create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+        w.sender as sender,
+        w.receiver as receiver,
+        DATE_FORMAT(w.received_time,'%Y-%m-%d %H:%i:%s') as receivedTime
+FROM hermes_waybill w,hermes_journey_record r
+WHERE r.dispatch_id=#dispatchId#
+AND r.waybill_id=w.id
+
+
+--[createJourneyRecord]
+INSERT INTO hermes_journey_record(
+                        dispatch_id,
+                        waybill_id,
+                        create_time,
+                        state
+                    )
+                    VALUES(
+                        #dispatchId#,
+                        #waybillId#,
+                        now(),
+                        1
+                    )
+--[deleteJourneyRecord]
+DELETE FROM hermes_journey_record
+ WHERE dispatch_id=#dispatchId#
+  AND waybill_id=#waybillId#;
+
+--[changeJourneyRecordState]
+UPDATE hermes_journey_record
+    SET state=#state#
+    WHERE dispatch_id=#dispatchId#
+      AND waybill_id=#waybillId#;
+
+--[changeWayBillState]
+UPDATE hermes_waybill
+    SET state=#state#
+    WHERE id=#waybillId#
+--[getJourneyRecordByWayBillId]
+select
+	  d.id as id,
+      d.vehicle_id as vehicleId,
+      d.driver_id as driverId,
+      d.origin_place as originPlace,
+      d.destination as destination,
+      DATE_FORMAT(d.create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+      DATE_FORMAT(d.arrive_time,'%Y-%m-%d %H:%i:%s') as arriveTime,
+      d.state as state
+    from hermes_journey_record r,
+         hermes_dispatch d
+where r.dispatch_id=d.id
+and r.waybill_id=#wayBillId#;
+
+--[getWayBillByDispatchId]
+SELECT
+        wb.id as id,
+        item_name as itemName,
+        origin_place as originPlace,
+        destination,
+        weight,
+        expense,
+        wb.state as state,
+        DATE_FORMAT(wb.create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+        sender,
+        receiver,
+        DATE_FORMAT(wb.received_time,'%Y-%m-%d %H:%i:%s') as receivedTime
+FROM hermes_waybill wb,
+     hermes_journey_record jr
+WHERE wb.id=jr.waybill_id
+AND   jr.dispatch_id=#dispatchId#
+
+
+--[setWayBillStaffId]
+update hermes_waybill
+    set staff_id=#staffId#
+    where id=#wayBillId#
+
+--[queryWayBillByItemName]
+SELECT
+        wb.id as id,
+        item_name as itemName,
+        origin_place as originPlace,
+        destination,
+        weight,
+        expense,
+        state,
+        DATE_FORMAT(wb.create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+        sender,
+        receiver,
+        DATE_FORMAT(wb.received_time,'%Y-%m-%d %H:%i:%s') as receivedTime,
+        u.id as staff_id,
+        u.staff_name as staff_name
+FROM hermes_waybill wb
+LEFT JOIN shiro_user u
+ON wb.staff_id=u.id
+WHERE wb.state!=-1
+AND
+item_name like CONCAT('%',#itemName#,'%')
+ORDER BY wb.create_time DESC
+
+--[queryWayBillByOriginPlace]
+SELECT
+        wb.id as id,
+        item_name as itemName,
+        origin_place as originPlace,
+        destination,
+        weight,
+        expense,
+        state,
+        DATE_FORMAT(wb.create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+        sender,
+        receiver,
+        DATE_FORMAT(wb.received_time,'%Y-%m-%d %H:%i:%s') as receivedTime,
+        u.id as staff_id,
+        u.staff_name as staff_name
+FROM hermes_waybill wb
+LEFT JOIN shiro_user u
+ON wb.staff_id=u.id
+WHERE wb.state!=-1
+AND
+origin_place like CONCAT('%',#originPlace#,'%')
+ORDER BY wb.create_time DESC
+
+--[queryWayBillByDestination]
+SELECT
+        wb.id as id,
+        item_name as itemName,
+        origin_place as originPlace,
+        destination,
+        weight,
+        expense,
+        state,
+        DATE_FORMAT(wb.create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+        sender,
+        receiver,
+        DATE_FORMAT(wb.received_time,'%Y-%m-%d %H:%i:%s') as receivedTime,
+        u.id as staff_id,
+        u.staff_name as staff_name
+FROM hermes_waybill wb
+LEFT JOIN shiro_user u
+ON wb.staff_id=u.id
+WHERE wb.state!=-1
+AND
+destination like CONCAT('%',#destination#,'%')
+ORDER BY wb.create_time DESC
+
+--[queryWayBillLimitTime]
+SELECT
+        wb.id as id,
+        item_name as itemName,
+        origin_place as originPlace,
+        destination,
+        weight,
+        expense,
+        state,
+        DATE_FORMAT(wb.create_time,'%Y-%m-%d %H:%i:%s') as createTime,
+        sender,
+        receiver,
+        DATE_FORMAT(wb.received_time,'%Y-%m-%d %H:%i:%s') as receivedTime,
+        u.id as staff_id,
+        u.staff_name as staff_name
+FROM hermes_waybill wb
+LEFT JOIN shiro_user u
+ON wb.staff_id=u.id
+WHERE wb.state!=-1
+AND(
+received_time BETWEEN #beginTime# AND #endTime#
+)
+ORDER BY wb.create_time DESC
+
+--[deleteDispatch]
+UPDATE hermes_dispatch
+SET delete_state=0
+WHERE id=#id#
+
+--[getWayBillID]
+SELECT id FROM hermes_waybill
+order by id desc

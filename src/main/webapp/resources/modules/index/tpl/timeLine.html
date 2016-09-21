@@ -1,0 +1,38 @@
+<template id="timeline-list-layout">
+    <ul class="timeline" id="dispatch-list">
+        <template id="dispatch-item">
+            <li <%if(index%2!=0){%>class="timeline-inverted"<%}%>>
+                <%if(state==2){%>
+                <div class="timeline-badge success"><i class="fa fa-check"></i></div>
+                <%}%>
+                <%if(state!=2){%>
+                <div class="timeline-badge warning"><i class="fa fa-credit-card"></i></div>
+                <%}%>
+
+                <div class="timeline-panel">
+                    <div class="timeline-heading"><h4 class="timeline-title">
+                        <%if(index==0){%>
+                            <i class="fa fa-clock-o"></i> <%=createTime%>从<%=originPlace%>出发
+                        <%}%>
+                    </h4>
+
+                        <p>
+                            <small class="text-muted">
+                                <%if(state==2){%>
+                                    <i class="fa fa-clock-o"></i> <%=arriveTime%>抵达<%=destination%>
+                                <%}%>
+                                <%if(state!=2){%>
+                                <p>
+                                    <i class="fa fa-clock-o"></i>
+                                    <%=createTime%>从<%=originPlace%>出发
+                                </p>
+                                    即将抵达<%=destination%>
+                                <%}%>
+                            </small>
+                        </p>
+                    </div>
+                </div>
+            </li>
+        </template>
+    </ul>
+</template>

@@ -1,0 +1,5 @@
+--[checkLogin]
+SELECT COUNT(*)
+    FROM hermes_admin
+   WHERE USERNAME=#username#
+   AND PASSWORD=#password#
