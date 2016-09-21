@@ -1,0 +1,3 @@
+--[getRedirectUrl]
+SELECT redirect_url FROM oauth_service_redirect
+                    WHERE service_code = #serviceCode#

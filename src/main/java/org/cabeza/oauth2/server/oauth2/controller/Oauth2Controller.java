@@ -14,12 +14,15 @@ import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.subject.Subject;
 import org.cabeza.oauth2.server.common.util.Collections;
 import org.cabeza.oauth2.server.common.util.JedisUtil;
+import org.cabeza.oauth2.server.oauth2.service.Oauth2Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import redis.clients.jedis.Jedis;
@@ -36,76 +39,67 @@ import java.util.Map;
 @Controller
 @RequestMapping("/cabeza-oauth-server/v1")
 public class Oauth2Controller {
+    @Autowired
+    Oauth2Service oauth2Service;
+
     @RequestMapping("authorize")
     public Object authorize(
             Model model,
-            HttpServletRequest request)
-            throws URISyntaxException, OAuthSystemException {
-        try {
-            //构建OAuth 授权请求
-            OAuthAuthzRequest oauthRequest = new OAuthAuthzRequest(request);
+            HttpServletRequest request) {
 
-            System.out.println("client id:" + oauthRequest.getClientId());
+        //得到业务码
+        String serviceCode = request.getParameter("service_code");
+        //根据业务码得到重定向地址
+        String redirectURI = oauth2Service.getRedirectUrl(serviceCode);
 
-            //生成授权码
-            String authorizationToken = null;
-            //TOKEN
-            String responseType = oauthRequest.getParam(OAuth.OAUTH_RESPONSE_TYPE);
-            if (responseType.equals(ResponseType.TOKEN.toString())) {
-                OAuthIssuerImpl oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
-                authorizationToken = oauthIssuerImpl.accessToken();
-                Jedis jedis= JedisUtil.getJedis();
-                jedis.setex("oauth:"+authorizationToken,60,SecurityUtils.getSubject().getPrincipal().toString());
-                JedisUtil.returnResource(jedis);
-                //添加至redis
-            }
 
-            //进行OAuth响应构建
-            OAuthASResponse.OAuthAuthorizationResponseBuilder builder =
-                    OAuthASResponse.authorizationResponse(request, HttpServletResponse.SC_FOUND);
-            //设置授权码
-            builder.setAccessToken(authorizationToken);
-
-            //得到到客户端重定向地址
-            String redirectURI = oauthRequest.getParam(OAuth.OAUTH_REDIRECT_URI);
-
-            String verifyUrl=request.getRequestURI();
-            verifyUrl=verifyUrl.substring(0,verifyUrl.lastIndexOf("/"))+"/accessToken";
-            //构建响应
-            final OAuthResponse response = builder.location(redirectURI).buildQueryMessage();
-            //根据OAuthResponse返回ResponseEntity响应
-            HttpHeaders headers = new HttpHeaders();
-            headers.setLocation(new URI(response.getLocationUri()));
-            return "redirect:"+redirectURI+"?access_token="+authorizationToken+"&verify_url="+verifyUrl;
-        } catch (OAuthProblemException e) {
-
-            //出错处理
-            String redirectUri = e.getRedirectUri();
-            if (OAuthUtils.isEmpty(redirectUri)) {
-                //告诉客户端没有传入redirectUri直接报错
-                return new ResponseEntity("OAuth callback url needs to be provided by client!!!", HttpStatus.NOT_FOUND);
-            }
-
-            //返回错误消息（如?error=）
-            final OAuthResponse response =
-                    OAuthASResponse.errorResponse(HttpServletResponse.SC_FOUND)
-                            .error(e).location(redirectUri).buildQueryMessage();
-            HttpHeaders headers = new HttpHeaders();
-            headers.setLocation(new URI(response.getLocationUri()));
-            return new ResponseEntity(headers, HttpStatus.valueOf(response.getResponseStatus()));
+        if (OAuthUtils.isEmpty(redirectURI)) {
+            //没有redirectUri直接报错
+            return new ResponseEntity("OAuth callback url needs to be provided by client!!!", HttpStatus.NOT_FOUND);
         }
+
+        //生成授权码
+        String authorizationToken = null;
+        OAuthIssuerImpl oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
+        try {
+            authorizationToken = oauthIssuerImpl.accessToken();
+        } catch (OAuthSystemException e) {
+            e.printStackTrace();
+        }
+        //获取用户标识，此处用的shiro
+        String userName = SecurityUtils.getSubject().getPrincipal().toString();
+        Jedis jedis = JedisUtil.getJedis();
+        //token添加至redis,时效10分钟
+        jedis.setex("boss:token:" + authorizationToken, 600, userName);
+        JedisUtil.returnResource(jedis);
+
+        //使用token和源信息拼接url
+        return "redirect:" + redirectURI + "?access_token=" + authorizationToken + "&origin=boss";
+
     }
 
     @ResponseBody
-    @RequestMapping("accessToken/{token}")
-    public Map accessToken(@PathVariable String token){
-        Jedis jedis= JedisUtil.getJedis();
-        String user=jedis.get("oauth:" + token);
+    @RequestMapping("check-token/{token}")
+    public Map accessToken(@PathVariable String token) {
+        Jedis jedis = JedisUtil.getJedis();
+        String user = jedis.get("oauth:" + token);
         JedisUtil.returnResource(jedis);
-        int result=1;
-        if (user==null)
-            result=0;
-        return Collections.asMap("access",result,"user",user);
+        int result = 1;
+        if (user == null)
+            result = 0;
+        return Collections.asMap("access", result, "user", user);
+    }
+
+    @ResponseBody
+    @RequestMapping("check-token")
+    public Map checkToken(@RequestBody String token) {
+        Jedis jedis = JedisUtil.getJedis();
+        String user = jedis.get("boss:token:" + token);
+        JedisUtil.returnResource(jedis);
+        int result = 1;
+        if (user == null)
+            result = 0;
+        return Collections.asMap("access", result, "user", user);
     }
 
 }

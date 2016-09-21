@@ -66,7 +66,7 @@
             <div class="sidebar-nav navbar-collapse">
                 <ul class="nav" id="side-menu">
                     <li>
-                        <a href="cabeza-oauth-server/v1/authorize?response_type=token&client_id=123&redirect_uri=http://eshow.cabeza.cn/">EShow</a>
+                        <a href="cabeza-oauth-server/v1/authorize?service_code=001">EShow</a>
                     </li>
                     <li>
                         <a href="#">A</a>
